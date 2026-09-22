@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organoid age &amp; feeding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F2;--card:#FFFFFF;--ink:#16212B;--muted:#5B6975;--faint:#8A97A1;--line:#D6DDE2;--soft:#F4F6F7;
+  --accent:#0E6E78;--accent-ink:#FFFFFF;--accent-soft:#DDEFF0;
+  --danger:#B43C3C;--danger-soft:#F6E1E1;--warn:#8A5F00;--warn-soft:#FBF0D6;
+  --st-induction:#6D5BD0;--st-patterning:#2F7FD1;--st-maturation:#C98A12;--st-maintenance:#3E9A5C;--st-none:#AAB4BC;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --cond:'IBM Plex Sans Condensed','Arial Narrow',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+[data-theme=dark]{
+  --bg:#11171C;--card:#1A232A;--ink:#E6ECEF;--muted:#9AA8B2;--faint:#6F7E88;--line:#2B3740;--soft:#212C34;
+  --accent:#4FC1C9;--accent-ink:#0B1A1C;--accent-soft:#17383C;
+  --danger:#E07A7A;--danger-soft:#3A2224;--warn:#E3B34A;--warn-soft:#3A3120;
+  --st-induction:#9C8CF0;--st-patterning:#62A6EE;--st-maturation:#E3AE45;--st-maintenance:#6CC48A;--st-none:#55636D;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.45;min-height:100vh;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+.bar{max-width:1280px;margin:0 auto;padding:14px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px}
+.brand{flex:1;min-width:220px;padding-bottom:12px}
+.brand h1{font-family:var(--cond);font-size:1.45rem;font-weight:600;letter-spacing:-.01em}
+.brand p{color:var(--muted);font-size:.87rem}
+.head-actions{display:flex;gap:8px;padding-bottom:12px;flex-wrap:wrap}
+nav{width:100%;display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:3px solid transparent;padding:9px 14px 10px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+
+main{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
+.page{display:none}.page.on{display:block}
+h2{font-family:var(--cond);font-size:1.25rem;font-weight:600;margin-bottom:4px}
+h3{font-size:1rem;font-weight:600}
+.lede{color:var(--muted);max-width:70ch;margin-bottom:18px;font-size:.93rem}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.small{font-size:.85rem}.mono{font-family:var(--mono)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* buttons */
+.btn{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:7px 13px;cursor:pointer;font-weight:500;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 9px;font-size:.8rem}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--soft)}
+.btn.danger{color:var(--danger)}
+.btn.done{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+/* forms */
+label.f{display:block;font-size:.82rem;font-weight:500;color:var(--muted);margin-bottom:5px}
+input[type=text],input[type=number],input[type=date],input[type=password],select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none}
+textarea{min-height:64px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.fg{margin-bottom:14px}
+.hint{font-size:.8rem;color:var(--faint);margin-top:4px}
+.check{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:.9rem}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:none;background:var(--card);padding:7px 12px;cursor:pointer;font-size:.88rem;color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.8rem;background:var(--soft)}
+.chip button{border:none;background:none;cursor:pointer;color:var(--muted);font-size:1rem;line-height:1}
+.tag{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:4px;background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.tag.core{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.mine{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.stage-dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle}
+
+/* batch cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 14px}
+.bc-top{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:start}
+.age{font-family:var(--cond);font-weight:600;font-size:3.1rem;line-height:.95;letter-spacing:-.02em}
+.age small{font-size:1.1rem;font-weight:500;margin-right:1px;vertical-align:.95rem}
+.age-sub{font-size:.8rem;color:var(--muted);margin-top:4px}
+.bc-name{font-weight:600;font-size:1.05rem;word-break:break-word}
+.bc-meta{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px;align-items:center}
+.feed-today{border-left:3px solid var(--line);padding:4px 0 4px 10px;font-size:.9rem}
+.feed-today b{display:block;font-size:.78rem;color:var(--muted);font-weight:500;margin-bottom:1px}
+.feed-today.skip{color:var(--muted)}
+.warnline{font-size:.8rem;background:var(--warn-soft);color:var(--warn);padding:6px 9px;border-radius:6px;margin-top:10px}
+
+/* ruler */
+.ruler{position:relative;margin:30px 0 8px;height:10px}
+.ruler .bands{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--soft)}
+.ruler .bands span{height:100%}
+.ruler .now{position:absolute;top:-6px;width:2px;height:22px;background:var(--ink);transform:translateX(-1px)}
+.ruler .now::after{content:'today';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:.68rem;color:var(--ink);font-weight:600}
+.ruler .tick{position:absolute;top:12px;transform:translateX(-50%);font-size:.68rem;color:var(--muted);white-space:nowrap}
+.ruler .tick::before{content:'';display:block;width:1px;height:6px;background:var(--muted);margin:0 auto 1px}
+.ruler .tick.done{color:var(--accent)}
+.ruler-gap{height:14px}
+
+/* week strip */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.wd{border:1px solid var(--line);border-radius:6px;padding:4px 0 5px;text-align:center;font-size:.72rem;color:var(--muted);background:var(--card)}
+.wd .n{font-weight:600;color:var(--ink);font-size:.8rem}
+.wd .s{display:block;margin:3px auto 0;width:18px;height:5px;border-radius:3px}
+.wd.today{border-color:var(--ink)}
+.wd.skip .s{background:transparent;border:1px dashed var(--faint);height:5px}
+.bc-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:.85rem}
+
+/* legend */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-bottom:16px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+
+/* tables */
+.tw{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{text-align:left;font-weight:500;color:var(--muted);font-size:.8rem;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.skiprow td{color:var(--faint)}
+tr.past td{opacity:.55}
+
+/* media */
+.media-head{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+.recipe{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+.recipe-h{padding:13px 16px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.recipe-h .ttl{flex:1;min-width:240px}
+.recipe-h .ttl h3{margin-bottom:3px}
+.total{font-family:var(--cond);font-size:1.7rem;font-weight:600;line-height:1;text-align:right}
+.total small{display:block;font-family:var(--sans);font-size:.75rem;color:var(--muted);font-weight:400;margin-top:3px}
+.vol{font-family:var(--mono);font-weight:500}
+.who{font-size:.82rem;color:var(--muted);margin-top:4px}
+details.sub{border-top:1px solid var(--line);padding:10px 16px;font-size:.87rem}
+details.sub summary{cursor:pointer;color:var(--muted)}
+details.sub table{margin-top:8px}
+.explain{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:.9rem}
+.explain summary{cursor:pointer;font-weight:600}
+.explain p{margin-top:8px;max-width:75ch}
+.explain code{font-family:var(--mono);background:var(--soft);padding:1px 5px;border-radius:4px;font-size:.85em}
+.boxes{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;min-width:150px}
+.box .k{font-size:.78rem;color:var(--muted)}
+.box .v{font-family:var(--cond);font-size:1.45rem;font-weight:600}
+
+/* empty */
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--r);padding:36px 20px;text-align:center;color:var(--muted)}
+.empty p{margin-bottom:14px}
+
+/* settings */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:18px}
+.panel > h3{margin-bottom:10px}
+
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(10,16,20,.55);display:none;align-items:flex-start;justify-content:center;padding:40px 14px;z-index:100;overflow-y:auto}
+.ov.open{display:flex}
+.modal{background:var(--card);border-radius:10px;width:100%;max-width:720px;border:1px solid var(--line)}
+.modal.wide{max-width:900px}
+.mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.mh h2{flex:1;margin:0}
+.mb{padding:18px 20px}
+.mf{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+
+.toast{position:fixed;bottom:18px;right:18px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:6px;font-size:.9rem;display:none;z-index:200;max-width:360px}
+.toast.show{display:block}
+.toast.err{background:var(--danger);color:#fff}
+
+@media (max-width:720px){
+  .cards{grid-template-columns:1fr}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .age{font-size:2.5rem}
+  main{padding:16px 12px 50px}
+}
+@media print{header,.btn,.head-actions,nav,.media-head button{display:none!important}.page{display:none!important}.page.on{display:block!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">
+      <h1>Organoid age &amp; feeding</h1>
+      <p id="todayLabel"></p>
+    </div>
+    <div class="head-actions">
+      <button class="btn" onclick="openImport()">Import core plates</button>
+      <button class="btn primary" onclick="openBatch()">Add a batch</button>
+    </div>
+    <nav role="tablist" id="tabs">
+      <button role="tab" data-tab="today" aria-selected="true">Today</button>
+      <button role="tab" data-tab="media">Media</button>
+      <button role="tab" data-tab="collections">Collections</button>
+      <button role="tab" data-tab="batches">Batches</button>
+      <button role="tab" data-tab="protocols">Feeding schedules</button>
+      <button role="tab" data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page on" id="p-today"></section>
+  <section class="page" id="p-media"></section>
+  <section class="page" id="p-collections"></section>
+  <section class="page" id="p-batches"></section>
+  <section class="page" id="p-protocols"></section>
+  <section class="page" id="p-settings"></section>
+</main>
+
+<!-- Batch modal -->
+<div class="ov" id="m-batch">
+  <div class="modal">
+    <div class="mh"><h2 id="mb-title">Add a batch</h2><button class="btn ghost" onclick="closeM('m-batch')" aria-label="Close">✕</button></div>
+    <div class="mb">
+      <div class="fg">
+        <label class="f">Who made them?</label>
+        <div class="seg" id="mb-source">
+          <button type="button" data-v="mine" aria-pressed="true">I formed them</button>
+          <button type="button" data-v="core" aria-pressed="false">The core made them</button>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="fg"><label class="f" for="mb-line">Cell line</label><input type="text" id="mb-line" list="dl-lines" placeholder="e.g. CS0003i"></div>
+        <div class="fg"><label class="f" for="mb-proto">Feeding schedule</label><select id="mb-proto"></select></div>
+      </div>
+      <div class="grid2">
+        <div class="fg">
+          <label class="f" for="mb-date" id="mb-date-label">D0 date</label>
+          <input type="date" id="mb-date">
+          <label class="check" style="margin-top:6px"><input type="checkbox" id="mb-isdm1"> This is the D-1 (aggregation) date</label>
+          <div class="hint" id="mb-date-hint"></div>
+        </div>
+        <div class="fg"><label class="f" for="mb-region">Region label</label><input type="text" id="mb-region" placeholder="e.g. hSpS"><div class="hint">Shown on cards. Filled from the schedule if left blank.</div></div>
+      </div>
+      <div class="grid3">
+        <div class="fg"><label class="f" for="mb-plates">Number of plates / dishes</label><input type="number" id="mb-plates" min="0" step="1" value="1"></div>
+        <div class="fg"><label class="f" for="mb-vessel">Vessel</label><select id="mb-vessel"></select></div>
+        <div class="fg" id="mb-wells-wrap"><label class="f" for="mb-wells">Wells in use per plate</label><input type="number" id="mb-wells" min="1" max="96" value="96"></div>
+      </div>
+      <div class="fg">
+        <label class="check"><input type="checkbox" id="mb-feed" checked> I feed these (include in the media calculator)</label>
+      </div>
+      <div class="fg"><label class="f" for="mb-plateids">Plate IDs (optional, comma-separated)</label><input type="text" id="mb-plateids" placeholder="e.g. hSpS0412, hSpS0413"></div>
+      <div class="fg">
+        <label class="f">Collection days</label>
+        <div class="row" id="mb-days"></div>
+        <div class="row" style="margin-top:8px"><input type="number" id="mb-newday" min="1" placeholder="Day" style="width:110px" onkeydown="if(event.key==='Enter'){event.preventDefault();addModalDay()}"><button class="btn sm" type="button" onclick="addModalDay()">Add day</button></div>
+      </div>
+      <div class="fg"><label class="f" for="mb-notes">Notes</label><textarea id="mb-notes" placeholder="Passage, seeding density, anything unusual"></textarea></div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeM('m-batch')">Cancel</button><button class="btn primary" id="mb-save" onclick="saveBatch()">Save batch</button></div>
+  </div>
+</div>
+
+<!-- Airtable import modal -->
+<div class="ov" id="m-import">
+  <div class="modal wide">
+    <div class="mh"><h2>Import core plates from Airtable</h2><button class="btn ghost" onclick="closeM('m-import')" aria-label="Close">✕</button></div>
+    <div class="mb">
+      <p class="small muted" style="margin-bottom:12px">Paste a personal access token with <span class="mono">data.records:read</span> and <span class="mono">schema.bases:read</span> scopes (make one at airtable.com/create/tokens). Plates come from the <b id="imp-viewname"></b> view of each region tab. The core's Day -1 date is shifted by <b id="imp-offset"></b> day to give your D0.</p>
+      <div class="fg">
+        <label class="f" for="imp-token">Airtable token</label>
+        <div class="row"><input type="password" id="imp-token" placeholder="pat…" style="flex:1;min-width:220px"><button class="btn" type="button" onclick="toggleTok()" id="imp-show">Show</button><button class="btn primary" type="button" onclick="atConnect()">Connect</button></div>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="imp-remember"> Remember this token in this browser</label>
+      </div>
+      <div id="imp-step2"></div>
+      <div id="imp-results"></div>
+    </div>
+  </div>
+</div>
+
+<datalist id="dl-lines"></datalist>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   1. DATE HELPERS  (local dates — no UTC drift after 7pm)
+   ========================================================= */
+const pad=n=>String(n).padStart(2,'0');
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function parseYmd(s){const [y,m,d]=String(s).slice(0,10).split('-').map(Number);return new Date(y,m-1,d);}
+function todayStr(){return ymd(new Date());}
+function addDays(s,n){const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d);}
+function diffDays(a,b){return Math.round((parseYmd(b)-parseYmd(a))/86400000);}
+function weekday(s){return parseYmd(s).getDay();}
+function fmt(s,o){if(!s)return'—';return parseYmd(s).toLocaleDateString('en-US',o||{weekday:'short',month:'short',day:'numeric',year:'numeric'});}
+function fmtShort(s){return fmt(s,{weekday:'short',month:'short',day:'numeric'});}
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function inDays(n){return n===0?'today':n===1?'tomorrow':n===-1?'yesterday':n>0?`in ${n} days`:`${-n} days ago`;}
+
+/* =========================================================
+   2. PROTOCOL DATA  (from Brain Organoid Formation protocols
+      + Organoid Feeding Schedule, Nov 2024)
+   ========================================================= */
+// Stock concentrations derived from the dilutions in the lab feeding sheet
+// (e.g. DM 1:2000 to reach 2.5 µM → 5 mM stock). "verify" = not in the sheet; confirm yours.
+const REAGENT_DEFAULTS={
+  ps:{name:'Pen/Strep',stock:100,unit:'X'},
+  glut:{name:'GlutaMAX',stock:100,unit:'X'},
+  b27:{name:'B27 minus vit. A',stock:50,unit:'X'},
+  n2:{name:'N-2',stock:100,unit:'X'},
+  dm:{name:'Dorsomorphin (DM)',stock:5,unit:'mM'},
+  sb:{name:'SB-431542',stock:10,unit:'mM'},
+  ri:{name:'Y-27632 (ROCK inhibitor)',stock:10,unit:'mM'},
+  xav:{name:'XAV',stock:2.5,unit:'mM',verify:true},
+  chir:{name:'CHIR',stock:3,unit:'mM'},
+  iwp2:{name:'IWP2',stock:2.5,unit:'mM',verify:true},
+  sag:{name:'SAG',stock:100,unit:'µM'},
+  ra:{name:'Retinoic acid (RA)',stock:1,unit:'mM'},
+  egf:{name:'EGF',stock:20,unit:'µg/mL'},
+  fgf2:{name:'FGF2',stock:20,unit:'µg/mL'},
+  bdnf:{name:'BDNF',stock:20,unit:'µg/mL'},
+  nt3:{name:'NT-3',stock:20,unit:'µg/mL',verify:true},
+  camp:{name:'cAMP',stock:100,unit:'mM'},
+  laa:{name:'L-ascorbic acid (L-AA)',stock:200,unit:'mM'},
+  igf:{name:'IGF',stock:10,unit:'µg/mL'},
+  dapt:{name:'DAPT',stock:2.5,unit:'mM'},
+};
+const UNITS={'M':['mol',1],'mM':['mol',1e-3],'µM':['mol',1e-6],'nM':['mol',1e-9],'mg/mL':['mass',1e6],'µg/mL':['mass',1e3],'ng/mL':['mass',1],'X':['x',1]};
+
+const BASES={
+  E6P:{label:'E6(+)',raw:'Essential 6',items:[['ps',1,'X']]},
+  NBAP:{label:'NB-A(+)',raw:'Neurobasal-A',items:[['b27',1,'X'],['glut',1,'X'],['ps',1,'X']]},
+};
+const STAGES={
+  induction:{label:'Induction (E6)',color:'var(--st-induction)'},
+  patterning:{label:'Patterning',color:'var(--st-patterning)'},
+  maturation:{label:'Maturation',color:'var(--st-maturation)'},
+  maintenance:{label:'Maintenance',color:'var(--st-maintenance)'},
+};
+const DS=[['dm',2.5,'µM'],['sb',10,'µM']];
+const SPN2=[['n2',1,'X'],['bdnf',20,'ng/mL'],['camp',50,'µM'],['laa',200,'µM'],['igf',10,'ng/mL']];
+const RECIPES={
+  DSR:{base:'E6P',stage:'induction',items:[...DS,['ri',10,'µM']]},
+  DS:{base:'E6P',stage:'induction',items:[...DS]},
+  DSX:{base:'E6P',stage:'induction',items:[...DS,['xav',2.5,'µM']]},
+  DSC:{base:'E6P',stage:'induction',items:[...DS,['chir',3,'µM']]},
+  EF:{base:'NBAP',stage:'patterning',items:[['egf',20,'ng/mL'],['fgf2',20,'ng/mL']]},
+  EFI:{base:'NBAP',stage:'patterning',items:[['fgf2',20,'ng/mL'],['egf',20,'ng/mL'],['iwp2',2.5,'µM']]},
+  EFIS:{base:'NBAP',stage:'patterning',items:[['fgf2',20,'ng/mL'],['egf',20,'ng/mL'],['iwp2',2.5,'µM'],['sag',100,'nM']]},
+  SPE:{base:'NBAP',stage:'patterning',items:[['fgf2',10,'ng/mL'],['egf',20,'ng/mL'],['ra',0.1,'µM'],['chir',3,'µM']]},
+  SPES:{base:'NBAP',stage:'patterning',items:[['fgf2',10,'ng/mL'],['egf',20,'ng/mL'],['ra',0.1,'µM'],['chir',3,'µM'],['sag',0.1,'µM']]},
+  SPN2D:{base:'NBAP',stage:'maturation',items:[...SPN2,['dapt',2.5,'µM']]},
+  SPN2:{base:'NBAP',stage:'maturation',items:[...SPN2]},
+  BN:{base:'NBAP',stage:'maturation',items:[['bdnf',20,'ng/mL'],['nt3',20,'ng/mL']]},
+  NB:{base:'NBAP',stage:'maintenance',items:[]},
+};
+// Schedule spec: [dayRange, recipe | 'S' (skip), optional 'odd'/'even' = feed only on those days, skip the others]
+const HUB_BN=[['26','BN'],['27','S'],['28','BN'],['29-30','S'],['31','BN'],['32','S'],['33','BN'],['34','S'],['35','BN'],['36-37','S'],['38','BN'],['39','S'],['40','BN'],['41','S'],['42','BN']];
+const PROTOCOLS={
+  '96-hCO':{label:'hCO — 96-well plate',region:'hCO',vessel:'96',group:'96-well U-bottom (no weekend skipping)',
+    spec:[['0','DSR'],['1-5','DS'],['6-15','EF'],['16-24','EF','odd'],['25-44','BN','odd'],['45-48','NB','odd']],
+    tail:{from:49,parity:'odd',recipe:'NB',text:'NB-A(+) only, every other day (odd days)'}},
+  '96-hCOX':{label:'hCO + XAV — 96-well plate',region:'hCO',vessel:'96',group:'96-well U-bottom (no weekend skipping)',
+    spec:[['0','DSR'],['1-5','DSX'],['6-15','EF'],['16-24','EF','odd'],['25-44','BN','odd'],['45-48','NB','odd']],
+    tail:{from:49,parity:'odd',recipe:'NB',text:'NB-A(+) only, every other day (odd days)'}},
+  '96-hSO':{label:'hSO — 96-well plate',region:'hSO',vessel:'96',group:'96-well U-bottom (no weekend skipping)',
+    spec:[['0','DSR'],['1-2','DS'],['3-5','DSX'],['6-11','EFI'],['12-17','EFIS'],['18-24','EFIS','odd'],['25-44','BN','odd'],['45-48','NB','odd']],
+    tail:{from:49,parity:'odd',recipe:'NB',text:'NB-A(+) only, every other day (odd days)'}},
+  '96-hSpO':{label:'hSpO — 96-well plate',region:'hSpO',vessel:'96',group:'96-well U-bottom (no weekend skipping)',
+    spec:[['0','DSR'],['1-2','DS'],['3-4','DSC'],['5-6','SPE'],['7-9','SPE','even'],['10-17','SPES','even'],['18-23','SPN2D','even'],['24-48','SPN2','even']],
+    tail:{from:49,parity:'even',recipe:'SPN2',text:'N-2 + BDNF + cAMP + L-AA + IGF, every other day (even days)'}},
+  'hub-hCS':{label:'hCS — 10 cm dish, Hub schedule',region:'hCS',vessel:'10cm',group:'10 cm dish, Hub schedule (Thursday aggregation, weekend skips)',needD0Weekday:5,
+    spec:[['0','DSR'],['1-5','DS'],['6-7','EF'],['8-9','S'],['10-14','EF'],['15-16','S'],['17','EF'],['18','S'],['19','EF'],['20','S'],['21','EF'],['22-23','S'],['24','EF'],['25','S'],...HUB_BN],
+    tail:{from:43,weekdays:[1,4],recipe:'NB',text:'NB-A(+) only, Mondays and Thursdays'}},
+  'hub-hSS':{label:'hSS — 10 cm dish, Hub schedule',region:'hSS',vessel:'10cm',group:'10 cm dish, Hub schedule (Thursday aggregation, weekend skips)',needD0Weekday:5,
+    spec:[['0','DSR'],['1-2','DS'],['3-5','DSX'],['6-7','EFI'],['8-9','S'],['10-11','EFI'],['12-14','EFIS'],['15-16','S'],['17-19','EFIS'],['20','S'],['21','EFIS'],['22-23','S'],['24','EFIS'],['25','S'],...HUB_BN],
+    tail:{from:43,weekdays:[1,4],recipe:'NB',text:'NB-A(+) only, Mondays and Thursdays'}},
+  'hub-hSpS':{label:'hSpS — 10 cm dish, Hub schedule',region:'hSpS',vessel:'10cm',group:'10 cm dish, Hub schedule (Thursday aggregation, weekend skips)',needD0Weekday:5,
+    spec:[['0','DSR'],['1-2','DS'],['3-4','DSC'],['5-6','SPE'],['7','S'],['8','SPE'],['9','S'],['10','SPES'],['11','S'],['12','SPES'],['13','S'],['14','SPES'],['15','S'],['16','SPES'],['17','S'],['18','SPN2D'],['19','S'],['20','SPN2D'],['21','S'],['22','SPN2D'],['23','S'],['24','SPN2'],['25','S'],['26','SPN2'],['27','S'],['28','SPN2'],['29-30','S'],['31','SPN2'],['32','S'],['33','SPN2'],['34','S'],['35','SPN2'],['36-37','S'],['38','SPN2'],['39','S'],['40','SPN2'],['41','S'],['42','SPN2']],
+    tail:{from:43,weekdays:[2,5],recipe:'SPN2',text:'N-2 + BDNF + cAMP + L-AA + IGF, Tuesdays and Fridays'}},
+};
+Object.values(PROTOCOLS).forEach(p=>{
+  p.map={};
+  p.spec.forEach(([r,rec,par])=>{
+    const [a,b]=r.split('-').map(Number);const end=isNaN(b)?a:b;
+    for(let d=a;d<=end;d++){p.map[d]=par?(((par==='odd')===(d%2===1))?rec:'S'):rec;}
+  });
+});
+
+/* =========================================================
+   3. STATE (saved in this browser's localStorage)
+   ========================================================= */
+const KEY='organoid-age-feeding-v1';
+function defaults(){return{
+  batches:[],feedLog:{},
+  settings:{theme:'light',defaultDays:[35,55,75],overage:15,remindDays:1,coreOffset:1,
+    vessels:{'96':{label:'96-well U-bottom plate',perPlate:96,changeUl:150,note:'75% change: 150 of 200 µL per well'},
+             '10cm':{label:'10 cm ULA dish',perPlate:1,changeUl:10000,note:'10 mL per dish'}},
+    reagents:{},
+    at:{base:'appVBgQMOF4mpIQHp',view:'Plate Owners',owner:'Nuri',token:''}}
+};}
+function load(){
+  const d=defaults();
+  try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);const ss=s.settings||{};
+    s.settings={...d.settings,...ss,vessels:{...d.settings.vessels,...(ss.vessels||{})},at:{...d.settings.at,...(ss.at||{})},reagents:ss.reagents||{}};
+    s.batches=s.batches||[];s.feedLog=s.feedLog||{};return s;}}catch(e){}
+  return d;
+}
+let S=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){toast('Could not save — this browser is blocking storage','err');}}
+
+/* =========================================================
+   4. CORE LOGIC
+   ========================================================= */
+function reagent(id){return{...REAGENT_DEFAULTS[id],...(S.settings.reagents[id]||{})};}
+// dilution factor = stock / final (in the same unit family). V_stock = V_total / factor.
+function dilution(id,final,unit){const r=reagent(id);const a=UNITS[r.unit],b=UNITS[unit];if(!a||!b||a[0]!==b[0]||!final)return NaN;return (r.stock*a[1])/(final*b[1]);}
+function recipeText(rid){const r=RECIPES[rid];const base=BASES[r.base].label;if(!r.items.length)return base+' only';
+  return r.items.map(([id,v,u])=>`${shortName(id)} (${v}${u==='X'?'X':' '+u})`).join(' + ')+' in '+base;}
+function shortName(id){return({ri:'Y-27',dm:'DM',sb:'SB',laa:'L-AA',ra:'RA'})[id]||reagent(id).name.replace(/\s*\(.*\)/,'');}
+
+function feedFor(pid,day,date){
+  const p=PROTOCOLS[pid];if(!p)return{type:'none'};
+  if(day<0)return{type:'pre'};
+  const m=p.map[day];if(m)return m==='S'?{type:'skip'}:{type:'feed',recipe:m};
+  const t=p.tail;
+  if(t&&day>=t.from){
+    if(t.parity)return((t.parity==='odd')===(day%2===1))?{type:'feed',recipe:t.recipe}:{type:'skip'};
+    if(t.weekdays)return t.weekdays.includes(weekday(date))?{type:'feed',recipe:t.recipe}:{type:'skip'};
+  }
+  return{type:'none'};
+}
+function batchFeed(b,date){return feedFor(b.protocol,diffDays(b.d0,date),date);}
+function stageOn(b,day){
+  if(!PROTOCOLS[b.protocol]||day<0)return null;
+  for(let k=day;k>=0;k--){const f=feedFor(b.protocol,k,addDays(b.d0,k));if(f.type==='feed')return RECIPES[f.recipe].stage;}
+  return'induction';
+}
+function vessel(id){return S.settings.vessels[id]||S.settings.vessels['96'];}
+function feedVolMl(b){const v=vessel(b.vessel);const per=b.vessel==='96'?(b.wells||v.perPlate):v.perPlate;return (Number(b.plates)||0)*per*v.changeUl/1000;}
+function active(){return S.batches.filter(b=>!b.archived).sort((a,b)=>a.d0.localeCompare(b.d0));}
+function regionOf(b){return b.region||(PROTOCOLS[b.protocol]?.region)||'';}
+function nextFeed(b,from){for(let k=1;k<=10;k++){const d=addDays(from,k);const f=batchFeed(b,d);if(f.type==='feed')return{date:d,recipe:f.recipe};}return null;}
+function fmtVol(ml){if(!isFinite(ml))return'—';if(ml>=1)return(Math.round(ml*100)/100)+' mL';const ul=ml*1000;return(ul<10?Math.round(ul*100)/100:Math.round(ul*10)/10)+' µL';}
+function fmtDil(f){if(!isFinite(f))return'check units';return'1:'+(f>=10?Math.round(f).toLocaleString():Math.round(f*10)/10);}
+function hubWarn(b){const p=PROTOCOLS[b.protocol];if(!p||p.needD0Weekday===undefined)return'';const w=weekday(b.d0);
+  return w===p.needD0Weekday?'':`This Hub schedule assumes Thursday aggregation (D0 on a Friday). This batch's D0 is a ${WD[w]}, so the planned skip days won't land on weekends — double-check feeds, or use a 96-well schedule.`;}
+
+/* =========================================================
+   5. UI HELPERS
+   ========================================================= */
+function $(id){return document.getElementById(id);}
+function toast(msg,type){const t=$('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3200);}
+function openM(id){$(id).classList.add('open');}
+function closeM(id){$(id).classList.remove('open');}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('mousedown',e=>{if(e.target===o)o.classList.remove('open');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));});
+function download(name,text,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function stageDot(st){return st?`<span class="stage-dot" style="background:${STAGES[st].color}"></span>`:'';}
+function legend(){return`<div class="legend">${Object.values(STAGES).map(s=>`<span><span class="stage-dot" style="background:${s.color}"></span>${s.label}</span>`).join('')}<span><span class="stage-dot" style="border:1px dashed var(--faint)"></span>Skip day</span></div>`;}
+function srcTag(b){return b.source==='core'?'<span class="tag core">Core</span>':'<span class="tag mine">Mine</span>';}
+
+let TAB='today';
+function show(tab){TAB=tab;document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==='p-'+tab));render();}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)show(b.dataset.tab);});
+function render(){
+  document.documentElement.dataset.theme=S.settings.theme;
+  $('todayLabel').textContent=fmt(todayStr(),{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  $('dl-lines').innerHTML=[...new Set(S.batches.map(b=>b.line))].map(l=>`<option value="${esc(l)}">`).join('');
+  ({today:renderToday,media:renderMedia,collections:renderCollections,batches:renderBatches,protocols:renderProtocols,settings:renderSettings})[TAB]();
+}
+
+/* =========================================================
+   6. TODAY
+   ========================================================= */
+function renderToday(){
+  const list=active();const el=$('p-today');
+  if(!list.length){el.innerHTML=`<div class="empty"><p>No batches yet. Add organoids you formed, or pull in the core's plates from Airtable.</p><div class="row" style="justify-content:center"><button class="btn primary" onclick="openBatch()">Add a batch</button><button class="btn" onclick="openImport()">Import core plates</button></div></div>`;return;}
+  const t=todayStr();
+  const feeds=list.filter(b=>b.feedByMe&&batchFeed(b,t).type==='feed');
+  const fed=feeds.filter(b=>S.feedLog[b.id+'|'+t]).length;
+  const colls=[];list.forEach(b=>(b.collectionDays||[]).forEach(d=>{const dt=addDays(b.d0,d);const n=diffDays(t,dt);if(n>=0&&n<=7&&!(b.collected||{})[d])colls.push(1);}));
+  el.innerHTML=`
+    <div class="boxes">
+      <div class="box"><div class="k">Batches in culture</div><div class="v">${list.length}</div></div>
+      <div class="box"><div class="k">To feed today</div><div class="v">${fed}/${feeds.length}</div></div>
+      <div class="box"><div class="k">Collections in the next 7 days</div><div class="v">${colls.length}</div></div>
+      <div class="spacer"></div>
+      <div class="row" style="align-self:flex-end"><button class="btn" onclick="show('media')">Today's media</button></div>
+    </div>
+    ${legend()}
+    <div class="cards">${list.map(cardHTML).join('')}</div>`;
+}
+function cardHTML(b){
+  const t=todayStr(),day=diffDays(b.d0,t),p=PROTOCOLS[b.protocol];
+  const f=batchFeed(b,t),st=stageOn(b,day);
+  const color=st?STAGES[st].color:'var(--ink)';
+  // feed line
+  let feed='';
+  if(day<0)feed=`<div class="feed-today"><b>Not started</b>D0 is ${fmtShort(b.d0)} (${inDays(-day)})${day===-1?' — aggregate today':''}</div>`;
+  else if(!p)feed=`<div class="feed-today skip"><b>Age tracking only</b>No feeding schedule attached${b.source==='core'?' (the core feeds these)':''}.</div>`;
+  else if(f.type==='feed'){const done=S.feedLog[b.id+'|'+t];
+    feed=`<div class="feed-today" style="border-color:${STAGES[RECIPES[f.recipe].stage].color}"><b>Today's feed${b.feedByMe?'':' (core feeds)'}</b>${esc(recipeText(f.recipe))}</div>`+
+      (b.feedByMe?`<div class="row" style="margin-top:8px"><button class="btn sm ${done?'done':''}" onclick="toggleFed('${b.id}')">${done?'✓ Fed':'Mark fed'}</button><span class="small muted">${fmtVol(feedVolMl(b)*(1+S.settings.overage/100))} with ${S.settings.overage}% extra</span></div>`:'');}
+  else if(f.type==='skip'){const n=nextFeed(b,t);feed=`<div class="feed-today skip"><b>Skip day</b>No feed today.${n?` Next feed ${fmtShort(n.date)}.`:''}</div>`;}
+  else feed=`<div class="feed-today skip"><b>Past the written schedule</b>Keep feeding per protocol.</div>`;
+
+  // ruler
+  const cds=(b.collectionDays||[]).slice().sort((a,c)=>a-c);
+  const maxDay=Math.max(50,day+5,...cds.map(d=>d+5));
+  let bands='';
+  if(p){let cur=null,start=0;const segs=[];
+    for(let d=0;d<=maxDay;d++){const ff=feedFor(b.protocol,d,addDays(b.d0,d));const s=ff.type==='feed'?RECIPES[ff.recipe].stage:(cur||'induction');if(s!==cur){if(cur)segs.push([cur,start,d]);cur=s;start=d;}}
+    segs.push([cur,start,maxDay+1]);
+    bands=segs.map(([s,a,z])=>`<span title="${STAGES[s].label}: D${a}–D${z-1}" style="width:${(z-a)/(maxDay+1)*100}%;background:${STAGES[s].color};opacity:${a>day?.35:1}"></span>`).join('');
+  }else bands=`<span style="width:100%;background:var(--st-none);opacity:.5"></span>`;
+  const pos=d=>Math.min(100,Math.max(0,d/(maxDay+1)*100));
+  const ticks=cds.map(d=>`<span class="tick ${(b.collected||{})[d]?'done':''}" style="left:${pos(d)}%">D${d}</span>`).join('');
+  const ruler=`<div class="ruler"><div class="bands">${bands}</div>${day>=0?`<span class="now" style="left:${pos(day+.5)}%"></span>`:''}${ticks}</div><div class="ruler-gap"></div>`;
+
+  // week strip
+  let week='';
+  if(p){week='<div class="week">'+Array.from({length:7},(_,k)=>{const d=addDays(t,k),dd=day+k,ff=feedFor(b.protocol,dd,d);
+    const cls=ff.type==='skip'?'skip':'';const col=ff.type==='feed'?STAGES[RECIPES[ff.recipe].stage].color:'transparent';
+    const tip=ff.type==='feed'?recipeText(ff.recipe):ff.type==='skip'?'Skip':ff.type==='pre'?'Before D0':'';
+    return`<div class="wd ${cls} ${k===0?'today':''}" title="${esc(tip)}">${WD[weekday(d)]}<div class="n">${dd>=0?'D'+dd:'—'}</div><span class="s" style="background:${ff.type==='feed'?col:''}"></span></div>`;}).join('')+'</div>';}
+
+  const nextC=cds.find(d=>d>=day&&!(b.collected||{})[d]);
+  const nextCtxt=nextC!==undefined?`Next collection <b>D${nextC}</b> · ${fmtShort(addDays(b.d0,nextC))} (${inDays(nextC-day)})`:'No upcoming collections';
+  const w=hubWarn(b);
+  return`<article class="card">
+    <div class="bc-top">
+      <div><div class="age" style="color:${color}"><small>D</small>${day}</div><div class="age-sub">${st?STAGES[st].label:day<0?'Upcoming':'Age'}</div></div>
+      <div>
+        <div class="bc-name">${esc(b.line)}</div>
+        <div class="bc-meta">${srcTag(b)}${regionOf(b)?`<span class="tag">${esc(regionOf(b))}</span>`:''}<span class="small muted">${b.plates} ${b.vessel==='10cm'?'dish'+(b.plates==1?'':'es'):'plate'+(b.plates==1?'':'s')} · D0 ${fmtShort(b.d0)}</span></div>
+        ${feed}
+      </div>
+    </div>
+    ${ruler}${week}
+    ${w?`<div class="warnline">${esc(w)}</div>`:''}
+    <div class="bc-foot"><span>${nextCtxt}</span><span class="spacer"></span><button class="btn sm ghost" onclick="openBatch('${b.id}')">Edit</button></div>
+  </article>`;
+}
+function toggleFed(id){const k=id+'|'+todayStr();if(S.feedLog[k])delete S.feedLog[k];else S.feedLog[k]=true;save();render();}
+
+/* =========================================================
+   7. MEDIA
+   ========================================================= */
+let MEDIA_DATE=null;
+function mediaPlan(date){
+  const groups={},skips=[],other=[];
+  active().forEach(b=>{
+    if(!b.feedByMe)return;
+    const day=diffDays(b.d0,date);
+    if(!PROTOCOLS[b.protocol]){other.push({b,day,why:'no schedule attached'});return;}
+    const f=feedFor(b.protocol,day,date);
+    if(f.type==='feed'){(groups[f.recipe]=groups[f.recipe]||{recipe:f.recipe,rows:[],ml:0});const ml=feedVolMl(b);groups[f.recipe].rows.push({b,day,ml});groups[f.recipe].ml+=ml;}
+    else if(f.type==='skip')skips.push({b,day});
+    else other.push({b,day,why:f.type==='pre'?'not started yet':'past the written schedule'});
+  });
+  return{groups:Object.values(groups),skips,other};
+}
+function renderMedia(){
+  const date=MEDIA_DATE||todayStr();
+  const {groups,skips,other}=mediaPlan(date);const ov=S.settings.overage;
+  const baseTotals={};groups.forEach(g=>{const r=RECIPES[g.recipe];const tot=g.ml*(1+ov/100);baseTotals[r.base]=(baseTotals[r.base]||0)+tot;});
+  const el=$('p-media');
+  el.innerHTML=`
+  <h2>Media for ${fmt(date,{weekday:'long',month:'long',day:'numeric'})}</h2>
+  <p class="lede">Every batch you feed, grouped by recipe. Volumes include ${ov}% extra for reservoir and pipetting loss (change this in Settings). Batch sizes come from the plate count and vessel on each batch.</p>
+  <div class="media-head">
+    <div><label class="f" for="md-date">Day to prepare for</label><input type="date" id="md-date" value="${date}" onchange="MEDIA_DATE=this.value;render()"></div>
+    <button class="btn" onclick="MEDIA_DATE=addDays('${date}',-1);render()">◀ Previous day</button>
+    <button class="btn" onclick="MEDIA_DATE=addDays('${date}',1);render()">Next day ▶</button>
+    ${date!==todayStr()?`<button class="btn ghost" onclick="MEDIA_DATE=null;render()">Back to today</button>`:''}
+    <span class="spacer"></span>
+    <button class="btn" onclick="window.print()">Print</button>
+  </div>
+  ${Object.keys(baseTotals).length?`<div class="boxes">${Object.entries(baseTotals).map(([k,v])=>`<div class="box"><div class="k">${BASES[k].label} to warm</div><div class="v">${fmtVol(v)}</div></div>`).join('')}</div>`:''}
+  ${groups.length?groups.map(g=>recipeCard(g,ov)).join(''):`<div class="empty"><p>Nothing to feed on this day.</p></div>`}
+  ${skips.length?`<div class="panel"><h3>Skip day for</h3><p class="small muted">${skips.map(s=>`${esc(s.b.line)} ${esc(regionOf(s.b))} (D${s.day})`).join(' · ')}</p></div>`:''}
+  ${other.length?`<div class="panel"><h3>Not in today's calculation</h3><p class="small muted">${other.map(s=>`${esc(s.b.line)} ${esc(regionOf(s.b))} — ${s.why}`).join(' · ')}</p></div>`:''}
+  ${baseMaker()}
+  ${mathExplainer()}`;
+}
+function recipeCard(g,ov){
+  const r=RECIPES[g.recipe],base=BASES[r.base],total=g.ml*(1+ov/100);
+  const sup=r.items.map(([id,v,u])=>{const f=dilution(id,v,u);const rg=reagent(id);return{id,name:rg.name,stock:`${rg.stock} ${rg.unit}`,final:`${v} ${u}`,f,ml:total/f,verify:rg.verify};});
+  const supMl=sup.reduce((s,x)=>s+(isFinite(x.ml)?x.ml:0),0);const baseMl=total-supMl;
+  const who=g.rows.map(x=>`${esc(x.b.line)} ${esc(regionOf(x.b))} · D${x.day} · ${x.b.plates} ${x.b.vessel==='10cm'?'dish':'plate'}${x.b.plates==1?'':x.b.vessel==='10cm'?'es':'s'} (${fmtVol(x.ml)})`).join('<br>');
+  const comp=base.items.map(([id,v,u])=>{const f=dilution(id,v,u);return{name:reagent(id).name,f,ml:baseMl/f};});
+  const compMl=comp.reduce((s,x)=>s+(isFinite(x.ml)?x.ml:0),0);
+  return`<div class="recipe">
+    <div class="recipe-h" style="border-left:4px solid ${STAGES[r.stage].color}">
+      <div class="ttl"><h3>${esc(recipeText(g.recipe))}</h3><div class="who">${who}</div></div>
+      <div class="total">${fmtVol(total)}<small>${fmtVol(g.ml)} needed + ${ov}%</small></div>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Component</th><th>Stock</th><th>Final</th><th>Dilution</th><th class="num">Add</th></tr></thead>
+      <tbody>
+        <tr><td><b>${base.label}</b> <span class="small muted">base medium</span></td><td>—</td><td>—</td><td>—</td><td class="num vol">${fmtVol(baseMl)}</td></tr>
+        ${sup.map(s=>`<tr><td>${esc(s.name)}${s.verify?' <span class="tag core" title="Stock concentration assumed — confirm yours in Settings">check stock</span>':''}</td><td>${s.stock}</td><td>${s.final}</td><td>${fmtDil(s.f)}</td><td class="num vol">${fmtVol(s.ml)}</td></tr>`).join('')}
+      </tbody>
+    </table></div>
+    <details class="sub"><summary>Making ${base.label} fresh for this? Show its components</summary>
+      <table><tbody>
+        <tr><td>${base.raw}</td><td class="num vol">${fmtVol(baseMl-compMl)}</td></tr>
+        ${comp.map(c=>`<tr><td>${esc(c.name)} (${fmtDil(c.f)})</td><td class="num vol">${fmtVol(c.ml)}</td></tr>`).join('')}
+      </tbody></table>
+    </details>
+  </div>`;
+}
+function baseMaker(){
+  const bk=window._bmBase||'NBAP',vol=window._bmVol||500;const base=BASES[bk];
+  const comp=base.items.map(([id,v,u])=>{const f=dilution(id,v,u);return{name:reagent(id).name,f,ml:vol/f};});
+  const sum=comp.reduce((s,x)=>s+x.ml,0);
+  return`<div class="panel"><h3>Make a bottle of base medium</h3>
+    <div class="row" style="margin-bottom:10px">
+      <select style="width:auto" onchange="window._bmBase=this.value;render()">${Object.entries(BASES).map(([k,b])=>`<option value="${k}"${k===bk?' selected':''}>${b.label}</option>`).join('')}</select>
+      <input type="number" min="1" value="${vol}" style="width:110px" onchange="window._bmVol=+this.value||500;render()"><span class="muted">mL total</span>
+    </div>
+    <table><tbody>
+      <tr><td>${base.raw}</td><td class="num vol">${fmtVol(vol-sum)}</td></tr>
+      ${comp.map(c=>`<tr><td>${esc(c.name)} (${fmtDil(c.f)})</td><td class="num vol">${fmtVol(c.ml)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function mathExplainer(){return`<details class="explain"><summary>How these volumes are calculated</summary>
+  <p>Every supplement uses the dilution equation <code>C₁V₁ = C₂V₂</code>: stock concentration × stock volume = final concentration × total volume. Rearranged, <code>V₁ = V₂ × C₂ ÷ C₁</code>.</p>
+  <p>Example: Dorsomorphin stock is 5 mM and you want 2.5 µM. Put both in the same unit first (5 mM = 5000 µM), so the dilution factor is 5000 ÷ 2.5 = 2000, which is the "1:2000" on your feeding sheet. For 17 mL of media that's 17 ÷ 2000 = 0.0085 mL = 8.5 µL.</p>
+  <p>Feed volume per 96-well plate = wells × 150 µL (the 75% change), so a full plate needs 14.4 mL before the extra. A quick self-check: if a volume looks off, divide the total by the dilution factor on paper and compare.</p>
+  <p class="muted">Want to go deeper? Search "C1V1 = C2V2 dilution" or look for a cell-culture media preparation guide from your core; checking the tool's math by hand once or twice is a good habit before you trust it.</p>
+</details>`;}
+
+/* =========================================================
+   8. COLLECTIONS + CALENDAR
+   ========================================================= */
+let COLL_FILTER='upcoming';
+function collectionEvents(includeArchived){
+  const ev=[];(includeArchived?S.batches:active()).forEach(b=>(b.collectionDays||[]).forEach(d=>{
+    const date=addDays(b.d0,d);const reg=regionOf(b);
+    ev.push({b,day:d,date,done:!!(b.collected||{})[d],uid:b.id+'-D'+d,
+      title:`D${d} collection · ${b.line}${reg?' '+reg:''}`,
+      desc:`Line: ${b.line}\nRegion: ${reg||'—'}\nD0: ${b.d0}${b.source==='core'?' (core; Day -1 was '+addDays(b.d0,-S.settings.coreOffset)+')':''}\nPlates: ${b.plates}${b.plateIds?.length?' — '+b.plateIds.join(', '):''}${b.notes?'\nNotes: '+b.notes:''}`});
+  }));
+  return ev.sort((a,b)=>a.date.localeCompare(b.date)||a.b.line.localeCompare(b.b.line));
+}
+function gcalUrl(e){const d=e.date.replace(/-/g,''),d2=addDays(e.date,1).replace(/-/g,'');
+  return'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',text:e.title,dates:`${d}/${d2}`,details:e.desc});}
+function outlookUrl(e){return'https://outlook.office.com/calendar/0/deeplink/compose?'+new URLSearchParams({path:'/calendar/action/compose',rru:'addevent',subject:e.title,startdt:e.date,enddt:addDays(e.date,1),allday:'true',body:e.desc});}
+function icsEsc(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
+function icsFold(line){const out=[];while(line.length>72){out.push(line.slice(0,72));line=' '+line.slice(72);}out.push(line);return out.join('\r\n');}
+function buildIcs(events){
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');const n=Number(S.settings.remindDays)||0;
+  const trig=n<=0?null:n===1?'-PT15H':`-P${n-1}DT15H`; // 9 am, n days before
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Organoid age tracker//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  events.forEach(e=>{L.push('BEGIN:VEVENT',`UID:${e.uid}@organoid-tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${e.date.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(e.date,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(e.title)}`,`DESCRIPTION:${icsEsc(e.desc)}`,'TRANSP:TRANSPARENT');
+    if(trig)L.push('BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${icsEsc('Prep: '+e.title)}`,`TRIGGER:${trig}`,'END:VALARM');L.push('END:VEVENT');});
+  L.push('END:VCALENDAR');return L.map(icsFold).join('\r\n');
+}
+function icsOne(uidv){const e=collectionEvents(true).find(x=>x.uid===uidv);if(e)download(`${e.title.replace(/[^\w-]+/g,'_')}.ics`,buildIcs([e]),'text/calendar');}
+function icsAllUpcoming(){const t=todayStr();const ev=collectionEvents().filter(e=>e.date>=t&&!e.done);if(!ev.length){toast('No upcoming collections to export');return;}download(`organoid-collections-${t}.ics`,buildIcs(ev),'text/calendar');toast(`Exported ${ev.length} collection${ev.length===1?'':'s'}`);}
+function icsBatch(id){const ev=collectionEvents(true).filter(e=>e.b.id===id);if(ev.length)download(`collections-${ev[0].b.line.replace(/[^\w-]+/g,'_')}.ics`,buildIcs(ev),'text/calendar');}
+function toggleCollected(id,d){const b=S.batches.find(x=>x.id===id);if(!b)return;b.collected=b.collected||{};if(b.collected[d])delete b.collected[d];else b.collected[d]=todayStr();save();render();}
+function renderCollections(){
+  const t=todayStr();let ev=collectionEvents();
+  if(COLL_FILTER==='upcoming')ev=ev.filter(e=>e.date>=t&&!e.done);
+  if(COLL_FILTER==='overdue')ev=ev.filter(e=>e.date<t&&!e.done);
+  const overdueN=collectionEvents().filter(e=>e.date<t&&!e.done).length;
+  $('p-collections').innerHTML=`
+    <h2>Collections</h2>
+    <p class="lede">Projected from each batch's D0 and its collection days (edit a batch to change them; set the defaults in Settings). The .ics files open in Outlook, Apple Calendar or Google Calendar${S.settings.remindDays>0?` and include a reminder at 9 am, ${S.settings.remindDays} day${S.settings.remindDays==1?'':'s'} before`:''}.</p>
+    <div class="row" style="margin-bottom:14px">
+      <div class="seg">${[['upcoming','Upcoming'],['overdue',`Overdue${overdueN?' ('+overdueN+')':''}`],['all','All']].map(([k,l])=>`<button aria-pressed="${COLL_FILTER===k}" onclick="COLL_FILTER='${k}';render()">${l}</button>`).join('')}</div>
+      <span class="spacer"></span>
+      <button class="btn primary" onclick="icsAllUpcoming()">Download all upcoming (.ics)</button>
+    </div>
+    ${ev.length?`<div class="tw"><table>
+      <thead><tr><th>Date</th><th>Age</th><th>Batch</th><th></th><th>Add to calendar</th><th>Collected</th></tr></thead>
+      <tbody>${ev.map(e=>`<tr class="${e.done?'past':''}">
+        <td><b>${fmt(e.date)}</b><div class="small muted">${inDays(diffDays(t,e.date))}</div></td>
+        <td><b>D${e.day}</b></td>
+        <td>${esc(e.b.line)} <span class="small muted">${esc(regionOf(e.b))}</span></td>
+        <td>${srcTag(e.b)}</td>
+        <td><div class="row"><a class="btn sm" href="${gcalUrl(e)}" target="_blank" rel="noopener">Google</a><a class="btn sm" href="${outlookUrl(e)}" target="_blank" rel="noopener">Outlook</a><button class="btn sm" onclick="icsOne('${e.uid}')">.ics</button></div></td>
+        <td><label class="check"><input type="checkbox" ${e.done?'checked':''} onchange="toggleCollected('${e.b.id}',${e.day})"> ${e.done?'Done':''}</label></td>
+      </tr>`).join('')}</tbody></table></div>`:`<div class="empty"><p>${COLL_FILTER==='overdue'?'Nothing overdue.':'No collections to show.'}</p></div>`}`;
+}
+
+/* =========================================================
+   9. BATCHES + MODAL
+   ========================================================= */
+function renderBatches(){
+  const t=todayStr();const act=active(),arch=S.batches.filter(b=>b.archived);
+  const row=b=>{const day=diffDays(b.d0,t);return`<tr>
+    <td><b>${esc(b.line)}</b><div class="small muted">${esc(regionOf(b))}</div></td>
+    <td>${srcTag(b)}</td>
+    <td>${fmt(b.d0)}${b.source==='core'?`<div class="small muted">core D-1 ${fmt(addDays(b.d0,-S.settings.coreOffset))}</div>`:''}</td>
+    <td class="num"><b>D${day}</b></td>
+    <td>${PROTOCOLS[b.protocol]?esc(PROTOCOLS[b.protocol].label):'<span class="muted">Age only</span>'}</td>
+    <td class="num">${b.plates}</td>
+    <td class="small">${(b.collectionDays||[]).map(d=>'D'+d).join(', ')}</td>
+    <td><div class="row"><button class="btn sm" onclick="openBatch('${b.id}')">Edit</button><button class="btn sm" onclick="icsBatch('${b.id}')" title="All collection dates for this batch">.ics</button>
+      <button class="btn sm" onclick="archiveBatch('${b.id}')">${b.archived?'Restore':'Archive'}</button><button class="btn sm danger" onclick="deleteBatch('${b.id}')">Delete</button></div></td></tr>`;};
+  const head='<thead><tr><th>Line</th><th>Source</th><th>D0</th><th class="num">Age</th><th>Schedule</th><th class="num">Plates</th><th>Collect</th><th></th></tr></thead>';
+  $('p-batches').innerHTML=`
+    <div class="row" style="margin-bottom:6px"><h2>Batches</h2><span class="spacer"></span><button class="btn" onclick="openImport()">Import core plates</button><button class="btn primary" onclick="openBatch()">Add a batch</button></div>
+    <p class="lede">Age is counted from D0 (D0 = day 0). For core plates, D0 is their Day -1 plus ${S.settings.coreOffset} day.</p>
+    ${act.length?`<div class="tw"><table>${head}<tbody>${act.map(row).join('')}</tbody></table></div>`:'<div class="empty"><p>No active batches.</p></div>'}
+    ${arch.length?`<details style="margin-top:22px"><summary class="muted" style="cursor:pointer;margin-bottom:10px">Archived (${arch.length})</summary><div class="tw"><table>${head}<tbody>${arch.map(row).join('')}</tbody></table></div></details>`:''}`;
+}
+function archiveBatch(id){const b=S.batches.find(x=>x.id===id);if(!b)return;b.archived=!b.archived;save();render();toast(b.archived?'Archived':'Restored');}
+function deleteBatch(id){const b=S.batches.find(x=>x.id===id);if(!b||!confirm(`Delete ${b.line} (D0 ${b.d0})? This can't be undone.`))return;S.batches=S.batches.filter(x=>x.id!==id);save();render();toast('Deleted');}
+
+let EDIT=null,M_DAYS=[],M_SRC='mine';
+function protoOptions(sel){
+  const groups={};Object.entries(PROTOCOLS).forEach(([k,p])=>(groups[p.group]=groups[p.group]||[]).push([k,p]));
+  return Object.entries(groups).map(([g,list])=>`<optgroup label="${esc(g)}">${list.map(([k,p])=>`<option value="${k}"${k===sel?' selected':''}>${esc(p.label)}</option>`).join('')}</optgroup>`).join('')+
+    `<option value=""${!sel?' selected':''}>Age tracking only (no feeding schedule)</option>`;
+}
+function setSrc(v){M_SRC=v;document.querySelectorAll('#mb-source button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));}
+$('mb-source').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;setSrc(b.dataset.v);
+  if(!EDIT){$('mb-feed').checked=b.dataset.v==='mine';$('mb-isdm1').checked=b.dataset.v==='core';updDateHint();}});
+function updDateHint(){const v=$('mb-date').value,dm1=$('mb-isdm1').checked;
+  $('mb-date-label').textContent=dm1?'D-1 date (aggregation)':'D0 date';
+  $('mb-date-hint').textContent=v?(dm1?`D0 will be ${fmt(addDays(v,S.settings.coreOffset))}`:`Today is D${diffDays(v,todayStr())}`):'';}
+$('mb-date').addEventListener('input',updDateHint);$('mb-isdm1').addEventListener('change',updDateHint);
+function updVessel(){$('mb-wells-wrap').style.visibility=$('mb-vessel').value==='96'?'visible':'hidden';}
+$('mb-vessel').addEventListener('change',updVessel);
+$('mb-proto').addEventListener('change',()=>{const p=PROTOCOLS[$('mb-proto').value];if(p){$('mb-vessel').value=p.vessel;updVessel();}});
+function renderModalDays(){$('mb-days').innerHTML=M_DAYS.sort((a,b)=>a-b).map(d=>`<span class="chip">D${d}<button type="button" onclick="M_DAYS=M_DAYS.filter(x=>x!==${d});renderModalDays()" aria-label="Remove D${d}">×</button></span>`).join('')||'<span class="small muted">None</span>';}
+function addModalDay(){const v=parseInt($('mb-newday').value);if(v>0&&!M_DAYS.includes(v)){M_DAYS.push(v);$('mb-newday').value='';renderModalDays();}}
+function openBatch(id){
+  EDIT=id||null;const b=id?S.batches.find(x=>x.id===id):null;
+  $('mb-title').textContent=b?'Edit batch':'Add a batch';
+  setSrc(b?b.source:'mine');
+  $('mb-line').value=b?.line||'';
+  $('mb-proto').innerHTML=protoOptions(b?b.protocol:'96-hSpO');
+  $('mb-vessel').innerHTML=Object.entries(S.settings.vessels).map(([k,v])=>`<option value="${k}">${esc(v.label)}</option>`).join('');
+  $('mb-vessel').value=b?.vessel||PROTOCOLS[$('mb-proto').value]?.vessel||'96';
+  $('mb-date').value=b?.d0||todayStr();$('mb-isdm1').checked=false;
+  $('mb-region').value=b?.region||'';
+  $('mb-plates').value=b?.plates??1;$('mb-wells').value=b?.wells||96;
+  $('mb-feed').checked=b?!!b.feedByMe:true;
+  $('mb-plateids').value=(b?.plateIds||[]).join(', ');
+  $('mb-notes').value=b?.notes||'';
+  M_DAYS=[...(b?.collectionDays||S.settings.defaultDays)];
+  renderModalDays();updVessel();updDateHint();openM('m-batch');setTimeout(()=>$('mb-line').focus(),50);
+}
+function saveBatch(){
+  const line=$('mb-line').value.trim();let date=$('mb-date').value;
+  if(!line){toast('Add the cell line','err');$('mb-line').focus();return;}
+  if(!date){toast('Add a date','err');return;}
+  if($('mb-isdm1').checked)date=addDays(date,S.settings.coreOffset);
+  const data={line,source:M_SRC,protocol:$('mb-proto').value,d0:date,region:$('mb-region').value.trim(),
+    plates:Math.max(0,parseInt($('mb-plates').value)||0),vessel:$('mb-vessel').value,wells:parseInt($('mb-wells').value)||96,
+    feedByMe:$('mb-feed').checked,plateIds:$('mb-plateids').value.split(',').map(s=>s.trim()).filter(Boolean),
+    collectionDays:[...M_DAYS].sort((a,b)=>a-b),notes:$('mb-notes').value.trim()};
+  if(EDIT){const b=S.batches.find(x=>x.id===EDIT);Object.assign(b,data);}else S.batches.push({id:uid(),created:todayStr(),collected:{},...data});
+  save();closeM('m-batch');render();toast(EDIT?'Batch updated':`Added ${line} — today is D${diffDays(date,todayStr())}`);
+}
+
+/* =========================================================
+   10. AIRTABLE IMPORT  (core plates)
+   ========================================================= */
+let AT={tables:[],groups:[]};
+function openImport(){
+  $('imp-viewname').textContent=S.settings.at.view;$('imp-offset').textContent='+'+S.settings.coreOffset;
+  $('imp-token').value=S.settings.at.token||'';$('imp-remember').checked=!!S.settings.at.token;
+  $('imp-step2').innerHTML='';$('imp-results').innerHTML='';openM('m-import');
+}
+function toggleTok(){const i=$('imp-token');i.type=i.type==='password'?'text':'password';$('imp-show').textContent=i.type==='password'?'Show':'Hide';}
+function atFlat(v){if(v==null)return'';if(Array.isArray(v))return v.map(x=>typeof x==='object'&&x?(x.name||x.email||x.id||''):String(x)).join(', ');if(typeof v==='object')return v.name||v.email||v.id||'';return String(v);}
+function normDate(s){s=String(s||'').trim();if(!s)return'';
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(m){const y=m[3].length===2?'20'+m[3]:m[3];return`${y}-${pad(+m[1])}-${pad(+m[2])}`;}
+  const d=new Date(s);return isNaN(d)?'':ymd(d);}
+async function atConnect(){
+  const tok=$('imp-token').value.trim();if(!tok){toast('Paste your token first','err');return;}
+  S.settings.at.token=$('imp-remember').checked?tok:'';save();
+  $('imp-step2').innerHTML='<p class="muted">Connecting…</p>';$('imp-results').innerHTML='';
+  try{
+    const r=await fetch(`https://api.airtable.com/v0/meta/bases/${S.settings.at.base}/tables`,{headers:{Authorization:'Bearer '+tok}});
+    if(!r.ok)throw new Error(r.status===401||r.status===403?'The token was rejected — check it has schema.bases:read and access to this base.':'Airtable returned '+r.status);
+    const j=await r.json();AT.tables=(j.tables||[]).filter(t=>t.name!=='iPSC');AT.token=tok;
+    $('imp-step2').innerHTML=`<div class="panel" style="margin-bottom:12px">
+      <label class="f">Region tabs</label>
+      <div class="row" id="imp-tabs" style="margin-bottom:12px">${AT.tables.map(t=>`<label class="check chip"><input type="checkbox" value="${t.id}" data-name="${esc(t.name)}" checked> ${esc(t.name)}</label>`).join('')}</div>
+      <div class="grid2"><div><label class="f" for="imp-owner">Plate owner contains</label><input type="text" id="imp-owner" value="${esc(S.settings.at.owner)}" placeholder="Your name; separate several with commas"><div class="hint">Leave blank to see every plate.</div></div>
+      <div style="align-self:end"><button class="btn primary" onclick="atFetch()">Find my plates</button></div></div></div>`;
+  }catch(e){$('imp-step2').innerHTML=`<p style="color:var(--danger)">${esc(e.message)}${e.message.includes('fetch')?' — if this file is open inside another app, open it directly in Chrome, Edge or Safari.':''}</p>`;}
+}
+async function atFetchAll(tableId){
+  const out=[];let offset;
+  do{const u=new URL(`https://api.airtable.com/v0/${S.settings.at.base}/${tableId}`);u.searchParams.set('view',S.settings.at.view);u.searchParams.set('pageSize','100');if(offset)u.searchParams.set('offset',offset);
+    const r=await fetch(u,{headers:{Authorization:'Bearer '+AT.token}});if(!r.ok)throw new Error(String(r.status));
+    const j=await r.json();out.push(...(j.records||[]));offset=j.offset;}while(offset);
+  return out;
+}
+function mapRegion(name){const n=name.toLowerCase();if(/hspo|hsps/.test(n))return'hub-hSpS';if(/hso\b|hss\b|subpall/.test(n))return'hub-hSS';if(/hco\b|hcs\b|cortic/.test(n))return'hub-hCS';return'';}
+async function atFetch(){
+  const owner=$('imp-owner').value;S.settings.at.owner=owner;save();
+  const terms=owner.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const sel=[...document.querySelectorAll('#imp-tabs input:checked')].map(c=>({id:c.value,name:c.dataset.name}));
+  const out=$('imp-results');out.innerHTML='<p class="muted">Fetching plates…</p>';
+  const failed=[];const recs=[];
+  await Promise.all(sel.map(async t=>{try{(await atFetchAll(t.id)).forEach(r=>recs.push({...r,_region:t.name}));}catch(e){failed.push(t.name);}}));
+  const fields=[...new Set(recs.flatMap(r=>Object.keys(r.fields||{})))];
+  const lineCol=fields.find(f=>/^line$/i.test(f))||fields.find(f=>/line/i.test(f));
+  const plateCol=fields.find(f=>/plate.?id|^plate$/i.test(f))||fields.find(f=>/plate/i.test(f)&&!/owner/i.test(f));
+  const dateCol=fields.find(f=>/(day|d)\s*-\s*1\b/i.test(f))||fields.find(f=>/d-?1|aggreg/i.test(f));
+  const ownerCol=fields.find(f=>/owner/i.test(f));
+  let rs=recs;
+  if(terms.length&&ownerCol)rs=rs.filter(r=>{const o=atFlat(r.fields[ownerCol]).toLowerCase();return terms.some(t=>o.includes(t));});
+  const groups={};
+  rs.forEach(r=>{const line=atFlat(r.fields[lineCol])||'(no line)',dm1=normDate(atFlat(r.fields[dateCol])),plate=atFlat(r.fields[plateCol]);
+    const k=r._region+'|'+line+'|'+dm1;(groups[k]=groups[k]||{region:r._region,line,dm1,plates:[]});if(plate&&!groups[k].plates.includes(plate))groups[k].plates.push(plate);});
+  AT.groups=Object.values(groups).sort((a,b)=>a.region.localeCompare(b.region)||b.dm1.localeCompare(a.dm1));
+  const t=todayStr(),off=S.settings.coreOffset;
+  const exists=g=>S.batches.find(b=>(b.plateIds||[]).some(p=>g.plates.includes(p)));
+  out.innerHTML=`
+    ${failed.length?`<p class="warnline" style="margin-bottom:10px">Couldn't read the "${esc(S.settings.at.view)}" view in: ${failed.map(esc).join(', ')}. Those tabs may not have that view.</p>`:''}
+    ${!dateCol&&recs.length?`<p class="warnline" style="margin-bottom:10px">Couldn't find a Day -1 column. Columns seen: ${fields.map(esc).join(', ')}</p>`:''}
+    ${AT.groups.length?`<p class="small muted" style="margin-bottom:8px">Found ${rs.length} plate${rs.length===1?'':'s'} in ${AT.groups.length} batch${AT.groups.length===1?'':'es'} (grouped by region, line and Day -1). Already-imported plates are unticked.</p>
+    <div class="tw"><table><thead><tr><th><input type="checkbox" checked onchange="document.querySelectorAll('.imp-g').forEach(c=>c.checked=this.checked)" aria-label="Select all"></th><th>Region</th><th>Line</th><th>Core Day -1</th><th>Your D0</th><th class="num">Age today</th><th>Plates</th></tr></thead><tbody>
+    ${AT.groups.map((g,i)=>{const d0=g.dm1?addDays(g.dm1,off):'';const ex=exists(g);return`<tr${ex?' class="past"':''}>
+      <td><input type="checkbox" class="imp-g" data-i="${i}" ${ex||!d0?'':'checked'} ${d0?'':'disabled'}></td>
+      <td>${esc(g.region)}</td><td><b>${esc(g.line)}</b></td><td>${g.dm1?fmt(g.dm1):'<span style="color:var(--danger)">missing</span>'}</td><td>${d0?fmt(d0):'—'}</td>
+      <td class="num">${d0?'D'+diffDays(d0,t):'—'}</td><td class="small">${g.plates.map(esc).join(', ')} <span class="muted">(${g.plates.length})</span>${ex?' <span class="tag">already here</span>':''}</td></tr>`;}).join('')}
+    </tbody></table></div>
+    <div class="row" style="margin-top:12px"><label class="check"><input type="checkbox" id="imp-feed"> I feed these myself (add them to the media calculator)</label><span class="spacer"></span><button class="btn primary" onclick="atImport()">Import selected</button></div>`
+    :`<p class="muted">No plates matched${terms.length?` owner "${esc(owner)}"`:''}.</p>`}`;
+}
+function atImport(){
+  const idx=[...document.querySelectorAll('.imp-g:checked')].map(c=>+c.dataset.i);const feed=$('imp-feed').checked;let n=0,m=0;
+  idx.forEach(i=>{const g=AT.groups[i];if(!g||!g.dm1)return;
+    const ex=S.batches.find(b=>(b.plateIds||[]).some(p=>g.plates.includes(p)));
+    if(ex){g.plates.forEach(p=>{if(!ex.plateIds.includes(p))ex.plateIds.push(p);});ex.plates=Math.max(ex.plates,ex.plateIds.length);m++;return;}
+    const proto=mapRegion(g.region);
+    S.batches.push({id:uid(),created:todayStr(),collected:{},source:'core',line:g.line,region:g.region,protocol:proto,d0:addDays(g.dm1,S.settings.coreOffset),
+      plates:g.plates.length,plateIds:[...g.plates],vessel:proto?'10cm':'10cm',wells:96,feedByMe:feed,collectionDays:[...S.settings.defaultDays],notes:'Imported from Airtable ('+S.settings.at.view+')'});n++;});
+  save();closeM('m-import');render();toast(`Imported ${n} batch${n===1?'':'es'}${m?`, updated ${m}`:''}`);
+}
+
+/* =========================================================
+   11. FEEDING SCHEDULE VIEWER
+   ========================================================= */
+let PV={proto:'96-hSpO',batch:''};
+function renderProtocols(){
+  const p=PROTOCOLS[PV.proto];const b=S.batches.find(x=>x.id===PV.batch&&x.protocol===PV.proto);
+  const last=p.tail.from+7;const t=todayStr();
+  const rows=[];for(let d=0;d<=last;d++){const date=b?addDays(b.d0,d):null;
+    const f=d<p.tail.from?(p.map[d]==='S'?{type:'skip'}:p.map[d]?{type:'feed',recipe:p.map[d]}:{type:'none'}):(date?feedFor(PV.proto,d,date):{type:'tail'});
+    rows.push({d,date,f});}
+  const mine=S.batches.filter(x=>x.protocol===PV.proto);
+  $('p-protocols').innerHTML=`
+    <h2>Feeding schedules</h2>
+    <p class="lede">Transcribed from your 96-well formation protocol (Appendix A) and the Hub's Nov 2024 feeding schedule. Check a few days against your copy before you rely on it. Pick a batch to see real dates.</p>
+    <div class="row" style="margin-bottom:14px">
+      <select style="width:auto" onchange="PV.proto=this.value;PV.batch='';render()">${Object.entries(PROTOCOLS).map(([k,x])=>`<option value="${k}"${k===PV.proto?' selected':''}>${esc(x.label)}</option>`).join('')}</select>
+      <select style="width:auto" onchange="PV.batch=this.value;render()"><option value="">No dates</option>${mine.map(x=>`<option value="${x.id}"${x.id===PV.batch?' selected':''}>${esc(x.line)} · D0 ${fmtShort(x.d0)}</option>`).join('')}</select>
+    </div>
+    ${legend()}
+    <div class="tw"><table><thead><tr><th class="num">Day</th>${b?'<th>Date</th>':''}<th>Feed</th></tr></thead><tbody>
+    ${rows.map(r=>{const isT=r.date===t;
+      if(r.f.type==='tail')return r.d===p.tail.from?`<tr><td class="num"><b>${r.d}+</b></td><td>${esc(p.tail.text)}</td></tr>`:'';
+      const st=r.f.type==='feed'?RECIPES[r.f.recipe].stage:null;
+      return`<tr class="${r.f.type==='skip'?'skiprow':''}"${isT?' style="outline:2px solid var(--accent);outline-offset:-2px"':''}><td class="num"><b>${r.d}</b></td>${b?`<td>${fmt(r.date,{weekday:'short',month:'short',day:'numeric'})}${isT?' · today':''}</td>`:''}<td>${st?stageDot(st)+' ':''}${r.f.type==='feed'?esc(recipeText(r.f.recipe)):r.f.type==='skip'?'Skip':'—'}</td></tr>`;}).join('')}
+    </tbody></table></div>
+    ${!b?`<p class="small muted" style="margin-top:10px">From D${p.tail.from}: ${esc(p.tail.text)}.</p>`:''}`;
+}
+
+/* =========================================================
+   12. SETTINGS
+   ========================================================= */
+function renderSettings(){
+  const s=S.settings;
+  $('p-settings').innerHTML=`
+  <h2>Settings</h2><p class="lede">Everything is saved in this browser only. Export a backup now and then, and use it to move to another computer.</p>
+  <div class="panel"><h3>Appearance</h3><div class="seg">${['light','dark'].map(t=>`<button aria-pressed="${s.theme===t}" onclick="S.settings.theme='${t}';save();render()">${t==='light'?'Light':'Dark'}</button>`).join('')}</div></div>
+  <div class="panel"><h3>Collections</h3>
+    <label class="f">Default collection days for new batches</label>
+    <div class="row">${s.defaultDays.slice().sort((a,b)=>a-b).map(d=>`<span class="chip">D${d}<button onclick="S.settings.defaultDays=S.settings.defaultDays.filter(x=>x!==${d});save();render()" aria-label="Remove D${d}">×</button></span>`).join('')}
+      <input type="number" id="st-day" min="1" placeholder="Day" style="width:100px"><button class="btn sm" onclick="const v=parseInt($('st-day').value);if(v>0&&!S.settings.defaultDays.includes(v)){S.settings.defaultDays.push(v);save();render();}">Add</button></div>
+    <div class="grid2" style="margin-top:14px"><div><label class="f" for="st-rem">Calendar reminder (days before)</label><input type="number" id="st-rem" min="0" max="14" value="${s.remindDays}" onchange="S.settings.remindDays=Math.max(0,parseInt(this.value)||0);save()"><div class="hint">0 = no reminder. Used in .ics files.</div></div></div>
+  </div>
+  <div class="panel"><h3>Media volumes</h3>
+    <div class="grid3">
+      <div><label class="f" for="st-ov">Extra media (%)</label><input type="number" id="st-ov" min="0" max="100" value="${s.overage}" onchange="S.settings.overage=Math.max(0,+this.value||0);save()"><div class="hint">Your protocol suggests 15–20% for reservoir dead volume.</div></div>
+      ${Object.entries(s.vessels).map(([k,v])=>`<div><label class="f">${esc(v.label)}</label><div class="row"><input type="number" min="1" value="${v.perPlate}" style="width:80px" onchange="S.settings.vessels['${k}'].perPlate=+this.value||1;save()" aria-label="Wells per plate"><span class="small muted">${k==='96'?'wells ×':'×'}</span><input type="number" min="1" value="${v.changeUl}" style="width:100px" onchange="S.settings.vessels['${k}'].changeUl=+this.value||1;save()" aria-label="Volume changed per well"><span class="small muted">µL changed</span></div><div class="hint">${esc(v.note)}</div></div>`).join('')}
+    </div>
+  </div>
+  <div class="panel"><h3>Stock concentrations</h3>
+    <p class="small muted" style="margin-bottom:10px">Worked out from the dilutions on your feeding sheet (for example DM at 1:2000 → 5 mM). Rows marked "check stock" weren't on the sheet, so they're a guess — replace them with what's on your tubes.</p>
+    <div class="tw"><table><thead><tr><th>Reagent</th><th>Stock</th><th>Unit</th><th></th></tr></thead><tbody>
+    ${Object.keys(REAGENT_DEFAULTS).map(id=>{const r=reagent(id);const edited=!!s.reagents[id];return`<tr><td>${esc(r.name)} ${r.verify&&!edited?'<span class="tag core">check stock</span>':''}</td>
+      <td><input type="number" step="any" min="0" value="${r.stock}" style="width:110px" onchange="setReagent('${id}','stock',+this.value)" aria-label="${esc(r.name)} stock"></td>
+      <td><select style="width:auto" onchange="setReagent('${id}','unit',this.value)">${Object.keys(UNITS).map(u=>`<option${u===r.unit?' selected':''}>${u}</option>`).join('')}</select></td>
+      <td>${edited?`<button class="btn sm ghost" onclick="delete S.settings.reagents['${id}'];save();render()">Reset</button>`:''}</td></tr>`;}).join('')}
+    </tbody></table></div>
+  </div>
+  <div class="panel"><h3>Core plates (Airtable)</h3>
+    <div class="grid2">
+      <div><label class="f">Core Day -1 → your D0: add</label><div class="row"><input type="number" min="0" max="3" value="${s.coreOffset}" style="width:80px" onchange="S.settings.coreOffset=parseInt(this.value)||0;save()"><span class="muted">day(s)</span></div><div class="hint">Changes future imports and the D-1 box when adding a batch.</div></div>
+      <div><label class="f" for="st-view">View name</label><input type="text" id="st-view" value="${esc(s.at.view)}" onchange="S.settings.at.view=this.value.trim();save()"></div>
+      <div><label class="f" for="st-base">Base ID</label><input type="text" id="st-base" value="${esc(s.at.base)}" onchange="S.settings.at.base=this.value.trim();save()"></div>
+      <div><label class="f">Saved token</label><div class="row"><span class="muted">${s.at.token?'A token is saved in this browser':'None saved'}</span>${s.at.token?`<button class="btn sm" onclick="S.settings.at.token='';save();render()">Forget it</button>`:''}</div></div>
+    </div>
+  </div>
+  <div class="panel"><h3>Backup</h3><div class="row">
+    <button class="btn" onclick="exportJson()">Export backup (.json)</button>
+    <button class="btn" onclick="$('st-imp').click()">Restore from backup</button><input type="file" id="st-imp" accept=".json" style="display:none" onchange="importJson(event)">
+    <span class="spacer"></span><button class="btn danger" onclick="if(confirm('Delete all batches and settings in this browser?')){localStorage.removeItem(KEY);S=defaults();render();toast('Cleared');}">Clear everything</button>
+  </div><p class="hint">Backups leave out your Airtable token.</p></div>`;
+}
+function setReagent(id,k,v){S.settings.reagents[id]={...(S.settings.reagents[id]||{}),[k]:v};save();}
+function exportJson(){const copy=JSON.parse(JSON.stringify(S));copy.settings.at.token='';download(`organoid-tracker-backup-${todayStr()}.json`,JSON.stringify(copy,null,2),'application/json');}
+function importJson(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.batches))throw 0;
+  if(!confirm(`Replace what's here with ${d.batches.length} batches from the backup?`))return;localStorage.setItem(KEY,JSON.stringify(d));S=load();render();toast('Backup restored');}catch(e){toast('That file isn\'t a tracker backup','err');}};r.readAsText(f);ev.target.value='';}
+
+/* init */
+render();
+setInterval(()=>{if($('todayLabel').dataset.d!==todayStr()){$('todayLabel').dataset.d=todayStr();render();}},60000);
+$('todayLabel').dataset.d=todayStr();
+</script>
+</body>
+</html>
